@@ -13,57 +13,52 @@ import base58, logging,time, re, os,sys, json
 from raydium.Raydium import *
 import requests
 
+def get_rate_limit(bloxroute_api_url, bloxroute_api_key, wallet_address):
+    response = requests.get(bloxroute_api_url + f"rate-limit", headers={
+        "Authorization": bloxroute_api_key
+    })
+    print(response.json())
+    return response
 
-def get_assets_by_owner(RPC_URL, wallet_address):
+def get_assets_by_owner(bloxroute_api_url, bloxroute_api_key, wallet_address):
     logger.info("Checking Wallet for New Tokens")
-    payload = {
-        "jsonrpc": "2.0",
-        "id": "my-id",
-        "method": "getAssetsByOwner",
-        "params": {
-            "ownerAddress": wallet_address,
-            "page": 1,  # Starts at 1
-            "limit": 1000,
-            "displayOptions": {
-                "showFungible": True,
-                "showNativeBalance": True,
-            }
-        }
-    }
+    print(bloxroute_api_url + f"balance/{wallet_address}")
+    print(bloxroute_api_key)
+    response = requests.get("https://ny.solana.dex.blxrbdn.com/api/v2/balance/DUdqC6tojmRnY3mb9i62VJNWUwqaVyNmGVFEe4worn7x", headers={
+        "Authorization": bloxroute_api_key
+    })
 
-    headers = {
-        "Content-Type": "application/json"
-    }
-
-    response = requests.post(RPC_URL, headers=headers, json=payload)
+    print(get_rate_limit(bloxroute_api_url, bloxroute_api_key, wallet_address))
     spl_tokens = []
+    print(response)
     if response.status_code == 200:
         data = response.json()
-        if "result" in data:
-            assets = data["result"]["items"]
-            for asset in assets:
-                interface_type = asset.get("interface", "")
-                if interface_type == "V1_NFT":
-                    continue  # Skip NFT assets
-                token_info = asset.get("token_info", {})
-                balance = token_info.get("balance", None)
-                price_info = token_info.get("price_info")
-                if balance and float(balance) > 0 and price_info is not None:
-                    spl_tokens.append({
-                        "id": asset["id"],
-                        "symbol": token_info.get("symbol", ""),
-                        "balance": balance,
-                        "token_info": token_info,
-                        "price": price_info["total_price"]
-                    })
-            for token in spl_tokens:
-                logger.info("Token ID: {}", token["id"])
-                logger.info("Symbol: {}", token["symbol"])
-                logger.info("Balance: {}", token["balance"])
-                logger.info("Price: {}", token["price"])
-                logger.info("Metadata: {}", token["token_info"])
-        else:
-            logger.error("No result found in response")
+        print(response)
+        # if "result" in data:
+        #     assets = data["result"]["items"]
+        #     for asset in assets:
+        #         interface_type = asset.get("interface", "")
+        #         if interface_type == "V1_NFT":
+        #             continue  # Skip NFT assets
+        #         token_info = asset.get("token_info", {})
+        #         balance = token_info.get("balance", None)
+        #         price_info = token_info.get("price_info")
+        #         if balance and float(balance) > 0 and price_info is not None:
+        #             spl_tokens.append({
+        #                 "id": asset["id"],
+        #                 "symbol": token_info.get("symbol", ""),
+        #                 "balance": balance,
+        #                 "token_info": token_info,
+        #                 "price": price_info["total_price"]
+        #             })
+        #     for token in spl_tokens:
+        #         logger.info("Token ID: {}", token["id"])
+        #         logger.info("Symbol: {}", token["symbol"])
+        #         logger.info("Balance: {}", token["balance"])
+        #         logger.info("Price: {}", token["price"])
+        #         logger.info("Metadata: {}", token["token_info"])
+        # else:
+        #     logger.error("No result found in response")
     else:
         logger.error("Error: {}, {}", response.status_code, response.text)
         
@@ -171,9 +166,9 @@ def main():
     config = ConfigParser()
     config.read(os.path.join(sys.path[0], 'data', 'config.ini'))
     
-    # Infura settings - register at infura and get your mainnet url.
-    RPC_HTTPS_URL = config.get("DEFAULT", "SOLANA_RPC_URL")
-    # Wallet tx list url
+    # # Infura settings - register at infura and get your mainnet url.
+    # RPC_HTTPS_URL = config.get("DEFAULT", "SOLANA_RPC_URL")
+    # # Wallet tx list url
     wallet_tx_list_url = config.get("DEFAULT", "WALLET_TX_LIST_URL")
     # Birdeye x_api_key
     birdeye_x_api_key = config.get("DEFAULT", "BIRDEYE_X_API_KEY")
@@ -184,25 +179,31 @@ def main():
     # Profit percentage
     percentage = int(config.get("DEFAULT", "PERCENTAGE")) / 100
     # Transfer fee
-    transfer_fee = int(config.get("DEFAULT", "TRANSFER_FEE"))
+    # transfer_fee = int(config.get("DEFAULT", "TRANSFER_FEE"))
     # Slippage percentage
     slippage = int(config.get("DEFAULT", "SLIPPAGE"))
+
+    bloxroute_api_key = config.get("DEFAULT", "BLOXROUTE_AUTH_HEADER")
+
+    bloxroute_api_url = config.get("DEFAULT", "BLOXROUTE_API_URL")
     
-    ctx = Client(RPC_HTTPS_URL, commitment=Commitment("confirmed"), timeout=30,blockhash_cache=True)
+    # ctx = Client(RPC_HTTPS_URL, commitment=Commitment("confirmed"), timeout=30,blockhash_cache=True)
     payer = Keypair.from_bytes(base58.b58decode(private_key))
     
     while True:
-        spl_tokens = get_assets_by_owner(RPC_URL=RPC_HTTPS_URL, wallet_address=wallet_address)
-        write_wallet_tokens(spl_tokens, wallet_tx_list_url=wallet_tx_list_url, birdeye_x_api_key=birdeye_x_api_key)
+        spl_tokens = get_assets_by_owner(bloxroute_api_url=bloxroute_api_url, bloxroute_api_key=bloxroute_api_key, wallet_address=wallet_address)
+        # write_wallet_tokens(spl_tokens, wallet_tx_list_url=wallet_tx_list_url, birdeye_x_api_key=birdeye_x_api_key)
 
         # Detect and process old tokens
         
-        old_tokens = detect_old_tokens(birdeye_x_api_key=birdeye_x_api_key, json_file="data/wallet_tokens.json", percentage=percentage)
+        # old_tokens = detect_old_tokens(birdeye_x_api_key=birdeye_x_api_key, json_file="data/wallet_tokens.json", percentage=percentage)
+        old_tokens = []
         for token in old_tokens:
             logger.info(f"Detected old token: {token}. Selling now.")
             try:
-                raydium_swap(ctx=ctx, payer=payer, desired_token_address=token['token_id'], transfer_fee=transfer_fee, slippage=slippage)
-                remove_token_from_json(token_id=token['token_id'])
+                # raydium_swap(ctx=ctx, payer=payer, desired_token_address=token['token_id'], transfer_fee=transfer_fee, slippage=slippage)
+                # remove_token_from_json(token_id=token['token_id'])
+                print("swapping")
             except Exception as e:
                 logger.warning(f"Issue encountered during sell {e}")    
 
