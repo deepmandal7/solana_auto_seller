@@ -184,7 +184,7 @@ def main():
     # Profit percentage
     percentage = int(config.get("DEFAULT", "PERCENTAGE")) / 100
     # Transfer fee
-    transfer_fee = int(config.get("DEFAULT", "TRANSFER_FEE"))
+    transfer_fee = float(config.get("DEFAULT", ("TRANSFER_FEE")))
     # Slippage percentage
     slippage = int(config.get("DEFAULT", "SLIPPAGE"))
     
