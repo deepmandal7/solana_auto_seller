@@ -24,13 +24,13 @@ def get_assets_by_owner(bloxroute_api_url, bloxroute_api_key, wallet_address):
     logger.info("Checking Wallet for New Tokens")
     print(bloxroute_api_url + f"balance/{wallet_address}")
     print(bloxroute_api_key)
-    response = requests.get("https://ny.solana.dex.blxrbdn.com/api/v2/balance/DUdqC6tojmRnY3mb9i62VJNWUwqaVyNmGVFEe4worn7x", headers={
+    response = requests.get(bloxroute_api_url + f"account/balance?ownerAddress={wallet_address}", headers={
         "Authorization": bloxroute_api_key
     })
 
     print(get_rate_limit(bloxroute_api_url, bloxroute_api_key, wallet_address))
     spl_tokens = []
-    print(response)
+    print(response.json())
     if response.status_code == 200:
         data = response.json()
         print(response)
